@@ -137,3 +137,40 @@ export interface UserDetail {
   liveSessions: LiveSession[];
   recentEvents: FocusEvent[];
 }
+
+// ── addiction protection ──────────────────────────────────────────────────────
+
+export interface ProtectionEntry {
+  id: string;
+  category: string;
+  kind: "site" | "app";
+  value: string;
+  label: string | null;
+  platform: string | null;
+  active: boolean;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProtectionListResult {
+  entries: ProtectionEntry[];
+  total: number;
+  skip: number;
+  take: number;
+}
+
+export interface ProtectionLock {
+  id: string;
+  userId: string;
+  active: boolean;
+  method: "partner" | "date";
+  categories: string[];
+  partnerContact: string | null;
+  otp: string | null;
+  otpSentAt: string | null;
+  lockedUntil: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: { email: string; status: string | null };
+}

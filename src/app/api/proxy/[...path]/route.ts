@@ -62,6 +62,9 @@ export async function GET(req: Request, ctx: { params: { path: string[] } }) {
 export async function POST(req: Request, ctx: { params: { path: string[] } }) {
   return forward(req, ctx.params.path);
 }
+export async function PATCH(req: Request, ctx: { params: { path: string[] } }) {
+  return forward(req, ctx.params.path);
+}
 export async function DELETE(req: Request, ctx: { params: { path: string[] } }) {
   return forward(req, ctx.params.path);
 }

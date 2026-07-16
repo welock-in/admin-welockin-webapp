@@ -27,6 +27,16 @@ const nav = [
       </>
     ),
   },
+  {
+    href: "/protection",
+    label: "Protection",
+    icon: (
+      <>
+        <path d="M12 21s7-3 7-8V6l-7-3-7 3v7c0 5 7 8 7 8z" />
+        <path d="M9.3 12l1.9 1.9 3.5-3.6" />
+      </>
+    ),
+  },
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {

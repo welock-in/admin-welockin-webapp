@@ -10,7 +10,7 @@ export async function apiGet<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function apiSend<T>(path: string, method: "POST" | "DELETE", body?: unknown): Promise<T> {
+export async function apiSend<T>(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<T> {
   const res = await fetch(`/api/proxy/${path}`, {
     method,
     headers: body !== undefined ? { "content-type": "application/json" } : undefined,
