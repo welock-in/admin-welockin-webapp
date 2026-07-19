@@ -22,7 +22,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
   } catch (e) {
     if (e instanceof BackendError && e.status === 401) redirect("/login");
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <BackLink href="/users">Back to profiles</BackLink>
         <Card className="p-6 mt-4">
           <p className="text-sm text-accent font-medium">
@@ -40,7 +40,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
   const weekdayData = stats.sessionsByWeekday.map((v, i) => ({ label: WEEKDAYS[i], value: v }));
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <BackLink href="/users">Back to profiles</BackLink>
 
       <PageHeader

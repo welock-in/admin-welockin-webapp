@@ -20,7 +20,7 @@ const btnGhost = "rounded-xl border border-black/10 text-sm font-semibold px-3 p
 export default function NotificationsPage() {
   const [tab, setTab] = useState<Tab>("send");
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <PageHeader
         title="Notifications"
         subtitle="Send a push, and manage the data-driven templates + rules."

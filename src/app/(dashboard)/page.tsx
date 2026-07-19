@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   } catch (e) {
     if (e instanceof BackendError && e.status === 401) redirect("/login");
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <PageHeader title="Dashboard" />
         <Card className="p-6">
           <p className="text-sm text-accent font-medium">
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   const plans = Object.entries(data.usersByPlan).sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <PageHeader title="Dashboard" subtitle="Real-time activity across WeLockin." />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">

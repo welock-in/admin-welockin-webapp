@@ -11,7 +11,7 @@ type Tab = "list" | "active";
 export default function ProtectionPage() {
   const [tab, setTab] = useState<Tab>("list");
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <PageHeader
         title="Addiction protection"
         subtitle="Curated blocklist (global) + accounts with protection on."

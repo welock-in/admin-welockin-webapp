@@ -65,7 +65,7 @@ export default function UsersPage() {
   const arrow = (field: string) => (sortBy === field ? (sortDir === "asc" ? "▲" : "▼") : "");
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <PageHeader
         title="Profiles"
         subtitle={data ? `${fmtNumber(data.total)} accounts` : "All accounts"}
