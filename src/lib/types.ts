@@ -121,12 +121,51 @@ export interface AdminUser {
   trialEndsAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // Entitlement overrides + cache (from toPublicUser). These drive the payment
+  // panel: whether a comp/revoke is currently in force, and what the resolver
+  // last computed.
+  entitlementStatus?: string | null;
+  isProCached?: boolean | null;
+  compActive?: boolean | null;
+  compReason?: string | null;
+  compedUntil?: string | null;
+  accessRevoked?: boolean | null;
+  revokedReason?: string | null;
+}
+
+export interface AdminPurchase {
+  id: string;
+  provider: string;
+  externalId: string;
+  productId: string;
+  priceUsd: number | null;
+  purchasedAt: string;
+  isRefunded: boolean;
+  refundedAt: string | null;
+  testMode: boolean | null;
+}
+
+export interface AdminSubscription {
+  id: string;
+  provider: string;
+  externalId: string;
+  variantId: string;
+  interval: string | null;
+  status: string;
+  validUntil: string | null;
+  trialEndsAt: string | null;
+  renewsAt: string | null;
+  endsAt: string | null;
+  testMode: boolean | null;
+  updatedAt: string;
 }
 
 export interface UserDetail {
   user: AdminUser;
   devices: Device[];
   stats: UserStats;
+  purchases: AdminPurchase[];
+  subscriptions: AdminSubscription[];
   snapshot: {
     blocklists: unknown;
     sessions: unknown;

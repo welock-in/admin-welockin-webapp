@@ -6,6 +6,7 @@ import { Card, PageHeader, StatCard, Badge, SectionTitle, BackLink } from "@/com
 import { BarChart } from "@/components/Charts";
 import UserModeration from "@/components/UserModeration";
 import ForceEndButton from "@/components/ForceEndButton";
+import PaymentPanel from "@/components/PaymentPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
     );
   }
 
-  const { user, stats, devices, liveSessions, recentEvents, snapshot } = d;
+  const { user, stats, devices, liveSessions, recentEvents, snapshot, purchases, subscriptions } = d;
   const suspended = user.status === "suspended";
 
   const focusDays = stats.focusByDay.map((x) => ({ label: x.day.slice(5), value: x.seconds }));
@@ -84,6 +85,12 @@ export default async function UserDetailPage({ params }: { params: { id: string 
           </div>
         </div>
       )}
+
+      {/* Payments & entitlement — who paid for what, and the levers to grant /
+          revoke / cancel without the customer paying. */}
+      <div className="mb-6">
+        <PaymentPanel user={user} purchases={purchases ?? []} subscriptions={subscriptions ?? []} />
+      </div>
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
