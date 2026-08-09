@@ -69,8 +69,23 @@ export default function PaymentPanel({
 
   // A synthetic test-lab row (never touches Lemon Squeezy) vs a real one.
   const isSim = (s: AdminSubscription) => s.testMode === true && s.externalId.startsWith("sim_");
-  const patchSim = (s: AdminSubscription, body: Record<string, unknown>) =>
-    apiSend(`admin/users/${uid}/test-subscription/${s.id}`, "PATCH", { reason, ...body });
+
+  /** Move a subscription to a lifecycle state — real LS op when the row is real. */
+  const transition = (s: AdminSubscription, to: string) =>
+    apiSend(`admin/users/${uid}/subscription-transition`, "POST", {
+      reason,
+      externalId: s.externalId,
+      to,
+    });
+
+  /** Set how long it has left, in days AND hours. */
+  const setTime = (s: AdminSubscription, days: number, hours: number) =>
+    apiSend(`admin/users/${uid}/subscription-time`, "POST", {
+      reason,
+      externalId: s.externalId,
+      days,
+      hours,
+    });
 
   return (
     <div className="rounded-2xl border border-black/10 bg-card p-5">
@@ -177,34 +192,52 @@ export default function PaymentPanel({
                     · sub {s.externalId}
                   </div>
 
-                  {/* Synthetic rows get direct levers instead of the LS buttons. */}
-                  {isSim(s) && testTools && (
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <select
-                        defaultValue={s.status}
-                        onChange={(e) => run("simstatus:" + s.id, () => patchSim(s, { status: e.target.value }))}
-                        disabled={!!busy}
-                        className="text-xs rounded-lg border border-black/10 bg-card px-2 py-1 outline-none"
-                      >
-                        {STATUSES.map((st) => (
-                          <option key={st} value={st}>{st}</option>
-                        ))}
-                      </select>
-                      <SimDays s={s} onApply={(d) => run("simdays:" + s.id, () => patchSim(s, { remainingDays: d }))} busy={!!busy} />
-                      <button
-                        onClick={() => run("simexpire:" + s.id, () => patchSim(s, { status: "expired", remainingDays: 0 }))}
-                        disabled={!!busy}
-                        className="rounded-lg border border-amber-500/40 text-amber-700 text-xs font-semibold px-2 py-1 hover:bg-amber-50 disabled:opacity-40"
-                      >
-                        Expire now
-                      </button>
-                      <button
-                        onClick={() => run("simdel:" + s.id, () => apiSend(`admin/users/${uid}/test-subscription/${s.id}`, "DELETE", { reason }))}
-                        disabled={!!busy}
-                        className="rounded-lg border border-black/15 text-ink text-xs font-semibold px-2 py-1 hover:bg-black/5 disabled:opacity-40"
-                      >
-                        Delete
-                      </button>
+                  {/* Lifecycle controls — on ANY row, real or synthetic. On a
+                      real one these are genuine Lemon Squeezy operations (the
+                      response says which), so the whole chain gets tested. */}
+                  {testTools && (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] uppercase tracking-wide text-muted mr-0.5">Move to</span>
+                        <button
+                          onClick={() => run("to-active:" + s.id, () => transition(s, "active"))}
+                          disabled={!!busy}
+                          className="rounded-lg border border-emerald-500/40 text-emerald-700 text-xs font-semibold px-2 py-1 hover:bg-emerald-50 disabled:opacity-40"
+                          title="A trial converts now (charges the card on file); a cancelled one resumes"
+                        >
+                          Pro (active)
+                        </button>
+                        <button
+                          onClick={() => run("to-cancelled:" + s.id, () => transition(s, "cancelled"))}
+                          disabled={!!busy}
+                          className="rounded-lg border border-accent/40 text-accent text-xs font-semibold px-2 py-1 hover:bg-accent/5 disabled:opacity-40"
+                          title="Real cancel. Cancelling a running trial ends access immediately."
+                        >
+                          Cancelled
+                        </button>
+                        <button
+                          onClick={() => run("to-expired:" + s.id, () => transition(s, "expired"))}
+                          disabled={!!busy}
+                          className="rounded-lg border border-amber-500/40 text-amber-700 text-xs font-semibold px-2 py-1 hover:bg-amber-50 disabled:opacity-40"
+                          title="Local write — Lemon Squeezy has no 'end it now'"
+                        >
+                          Expired
+                        </button>
+                        {isSim(s) && (
+                          <button
+                            onClick={() => run("simdel:" + s.id, () => apiSend(`admin/users/${uid}/test-subscription/${s.id}`, "DELETE", { reason }))}
+                            disabled={!!busy}
+                            className="rounded-lg border border-black/15 text-ink text-xs font-semibold px-2 py-1 hover:bg-black/5 disabled:opacity-40"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                      <TimeLeft
+                        s={s}
+                        busy={!!busy}
+                        onApply={(d, h) => run("time:" + s.id, () => setTime(s, d, h))}
+                      />
                     </div>
                   )}
                 </div>
@@ -405,38 +438,67 @@ export default function PaymentPanel({
 /** The seven Lemon Squeezy statuses, for the test-lab selects. */
 const STATUSES = ["on_trial", "active", "paused", "past_due", "unpaid", "cancelled", "expired"];
 
-/** A tiny days-input + Apply for editing a synthetic row's remaining days. */
-function SimDays({
+/**
+ * How long this subscription has left, in days AND hours, with the shortcuts
+ * that matter: "2d" is the trial-reminder window, "1h" is about-to-lapse, "0"
+ * is gone. Pre-filled from the row so it reads as an edit, not a blank form.
+ */
+function TimeLeft({
   s,
   onApply,
   busy,
 }: {
   s: AdminSubscription;
-  onApply: (days: number) => void;
+  onApply: (days: number, hours: number) => void;
   busy: boolean;
 }) {
-  const current = s.validUntil
-    ? Math.max(0, Math.round((new Date(s.validUntil).getTime() - Date.now()) / 86_400_000))
-    : 0;
-  const [days, setDays] = useState(String(current));
+  const msLeft = s.validUntil ? Math.max(0, new Date(s.validUntil).getTime() - Date.now()) : 0;
+  const [days, setDays] = useState(String(Math.floor(msLeft / 86_400_000)));
+  const [hours, setHours] = useState(String(Math.floor((msLeft % 86_400_000) / 3_600_000)));
+
+  const preset = (d: number, h: number) => {
+    setDays(String(d));
+    setHours(String(h));
+    onApply(d, h);
+  };
+
   return (
-    <span className="inline-flex items-center gap-1 rounded-lg border border-black/10 bg-card pl-2 pr-1 py-0.5">
-      <input
-        type="number"
-        min={0}
-        max={730}
-        value={days}
-        onChange={(e) => setDays(e.target.value)}
-        className="w-14 text-xs bg-transparent outline-none"
-      />
-      <span className="text-[10px] text-muted">d</span>
-      <button
-        onClick={() => onApply(Number(days) || 0)}
-        disabled={busy}
-        className="rounded bg-ink text-white text-[11px] font-semibold px-2 py-0.5 disabled:opacity-40"
-      >
-        Apply
-      </button>
-    </span>
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wide text-muted mr-0.5">Time left</span>
+      <span className="inline-flex items-center gap-1 rounded-lg border border-black/10 bg-card pl-2 pr-1 py-0.5">
+        <input
+          type="number"
+          min={0}
+          max={730}
+          value={days}
+          onChange={(e) => setDays(e.target.value)}
+          className="w-12 text-xs bg-transparent outline-none"
+          aria-label="days left"
+        />
+        <span className="text-[10px] text-muted">d</span>
+        <input
+          type="number"
+          min={0}
+          max={23}
+          value={hours}
+          onChange={(e) => setHours(e.target.value)}
+          className="w-10 text-xs bg-transparent outline-none"
+          aria-label="hours left"
+        />
+        <span className="text-[10px] text-muted">h</span>
+        <button
+          onClick={() => onApply(Number(days) || 0, Number(hours) || 0)}
+          disabled={busy}
+          className="rounded bg-ink text-white text-[11px] font-semibold px-2 py-0.5 disabled:opacity-40"
+        >
+          Apply
+        </button>
+      </span>
+      {/* The three moments worth one click. 2 days is when the trial reminder
+          (email + desktop toast) is due. */}
+      <button onClick={() => preset(2, 0)} disabled={busy} className="rounded-lg border border-black/10 text-ink text-[11px] px-2 py-1 hover:bg-black/5 disabled:opacity-40">2d — reminder</button>
+      <button onClick={() => preset(0, 1)} disabled={busy} className="rounded-lg border border-black/10 text-ink text-[11px] px-2 py-1 hover:bg-black/5 disabled:opacity-40">1h</button>
+      <button onClick={() => preset(0, 0)} disabled={busy} className="rounded-lg border border-black/10 text-ink text-[11px] px-2 py-1 hover:bg-black/5 disabled:opacity-40">0 — now</button>
+    </div>
   );
 }
