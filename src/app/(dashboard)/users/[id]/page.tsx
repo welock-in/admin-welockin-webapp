@@ -34,7 +34,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
     );
   }
 
-  const { user, stats, devices, liveSessions, recentEvents, snapshot, purchases, subscriptions } = d;
+  const { user, stats, devices, liveSessions, recentEvents, snapshot, purchases, subscriptions, testTools } = d;
   const suspended = user.status === "suspended";
 
   const focusDays = stats.focusByDay.map((x) => ({ label: x.day.slice(5), value: x.seconds }));
@@ -89,7 +89,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
       {/* Payments & entitlement — who paid for what, and the levers to grant /
           revoke / cancel without the customer paying. */}
       <div className="mb-6">
-        <PaymentPanel user={user} purchases={purchases ?? []} subscriptions={subscriptions ?? []} />
+        <PaymentPanel user={user} purchases={purchases ?? []} subscriptions={subscriptions ?? []} testTools={testTools} />
       </div>
 
       {/* Stat grid */}

@@ -166,6 +166,8 @@ export interface UserDetail {
   stats: UserStats;
   purchases: AdminPurchase[];
   subscriptions: AdminSubscription[];
+  /** Whether the deploy allows the synthetic-subscription test lab (test mode). */
+  testTools?: boolean;
   snapshot: {
     blocklists: unknown;
     sessions: unknown;
