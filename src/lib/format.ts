@@ -27,24 +27,42 @@ export function fmtNumber(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
 }
 
+/**
+ * Dates in this console are rendered in UTC, from explicit getters.
+ *
+ * WHY NOT `toLocaleString(undefined, …)`, which is what these were. `undefined`
+ * means "the runtime's locale", and the runtime is not the same on both sides:
+ * Node rendered "10 Sept 2026, 10:54" while the browser rendered
+ * "Sep 10, 2026, 10:54 AM". React saw the mismatch, discarded the subtree and
+ * re-rendered it — silently wiping whatever an operator had typed into the
+ * audited-reason field, with no error and no way to tell it had happened.
+ *
+ * The fix is determinism, not suppression: no `suppressHydrationWarning`, no
+ * client-only rendering, no empty server render. Two identical strings.
+ *
+ * UTC rather than local time is also the right answer for an admin console —
+ * every operator reads the same instant, and it matches the ISO timestamps the
+ * backend logs and audits with.
+ */
+const pad = (n: number): string => String(n).padStart(2, "0");
+
+/** `2026-09-10 10:54 UTC`, or the em dash for absent/invalid input. */
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return (
+    `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}` +
+    ` ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`
+  );
 }
 
+/** `2026-09-10`, same rules. */
 export function fmtDateShort(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }
 
 export function timeAgo(iso: string | null | undefined): string {
