@@ -179,6 +179,44 @@ export interface UserDetail {
   recentEvents: FocusEvent[];
 }
 
+// ── billing tasks (the cancellation outbox) ───────────────────────────────────
+
+/** One owed provider action from `GET /admin/billing-tasks` (never a settled
+ *  one — the route only returns rows whose `doneAt` is still empty). */
+export interface BillingTask {
+  id: string;
+  /** The subscription id AT the provider (Lemon Squeezy). */
+  externalId: string;
+  /** "cancel" today. */
+  kind: string;
+  /** Why it is owed — e.g. "account-deleted-by-admin", "admin-cancel". */
+  reason: string;
+  attempts: number;
+  lastError: string | null;
+  lockedAt: string | null;
+  nextAttemptAt: string;
+  createdAt: string;
+}
+
+export interface BillingTasksResult {
+  /** pending + deadLetter, the one number the badge shows. */
+  owed: number;
+  /** Still being retried automatically (attempts < maxAttempts). */
+  pending: BillingTask[];
+  /** Gave up (attempts >= maxAttempts): retried only when a human replays. */
+  deadLetter: BillingTask[];
+  maxAttempts: number;
+}
+
+/** `POST /admin/billing-tasks/drain` — what one manual drain run did. */
+export interface DrainReport {
+  due: number;
+  settled: number;
+  contended: number;
+  stillOwed: number;
+  deadLettered: number;
+}
+
 // ── addiction protection ──────────────────────────────────────────────────────
 
 export interface ProtectionEntry {

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { apiGet } from "@/lib/client";
+import type { BillingTasksResult } from "@/lib/types";
 
 const nav = [
   {
@@ -39,6 +41,16 @@ const nav = [
     ),
   },
   {
+    href: "/billing",
+    label: "Billing",
+    icon: (
+      <>
+        <rect x="3" y="5" width="18" height="14" rx="2.2" />
+        <path d="M3 10h18M7 15h4" />
+      </>
+    ),
+  },
+  {
     href: "/notifications",
     label: "Notifications",
     icon: (
@@ -61,10 +73,40 @@ function LogoMark() {
   );
 }
 
-export default function Shell({ children }: { children: React.ReactNode }) {
+export default function Shell({
+  children,
+  initialDeadLetters = 0,
+}: {
+  children: React.ReactNode;
+  /** Dead-lettered billing tasks at layout load (server-fetched); kept fresh below. */
+  initialDeadLetters?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // The one number that must not go unseen: cancellations the automatic
+  // machinery has given up on. Server-rendered first (the layout fetches it),
+  // then re-polled so the badge does not fossilise — the layout never
+  // re-renders on navigation.
+  const [deadLetters, setDeadLetters] = useState(initialDeadLetters);
+
+  useEffect(() => {
+    let alive = true;
+    const poll = async () => {
+      try {
+        const t = await apiGet<BillingTasksResult>("admin/billing-tasks");
+        if (alive) setDeadLetters(t.deadLetter.length);
+      } catch {
+        /* badge is best-effort; the pages surface real errors */
+      }
+    };
+    const iv = setInterval(poll, 60000);
+    void poll();
+    return () => {
+      alive = false;
+      clearInterval(iv);
+    };
+  }, []);
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -102,6 +144,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               {n.icon}
             </svg>
             {n.label}
+            {n.href === "/billing" && deadLetters > 0 && (
+              <span
+                title={`${deadLetters} dead-lettered billing task${deadLetters === 1 ? "" : "s"} — a customer may still be being charged`}
+                className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold"
+              >
+                {deadLetters}
+              </span>
+            )}
           </Link>
         ))}
       </nav>
