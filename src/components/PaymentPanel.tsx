@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiSend } from "@/lib/client";
 import { Badge } from "@/components/ui";
+import ResetTestUser from "@/components/ResetTestUser";
 import { fmtDate } from "@/lib/format";
 import type { AdminUser, AdminPurchase, AdminSubscription } from "@/lib/types";
 
@@ -621,6 +622,11 @@ export default function PaymentPanel({
           </div>
         </div>
       )}
+
+      {/* ── Reset test user ── also test-gated. Email-keyed (not tied to the
+          account on this page), so the tester frees any address in one call —
+          and gets the leg-by-leg report, with the Apple caveat, right here. */}
+      {testTools && <ResetTestUser />}
     </div>
   );
 }

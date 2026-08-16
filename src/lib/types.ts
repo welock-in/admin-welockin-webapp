@@ -179,6 +179,27 @@ export interface UserDetail {
   recentEvents: FocusEvent[];
 }
 
+// ── test lab: reset test user ─────────────────────────────────────────────────
+
+/**
+ * The per-leg report from `POST /admin/test/reset-user`. Honest by design:
+ * every leg reports its own outcome, a failed leg appears in `failures`
+ * (or `rcSubscriberFailures` for a per-subscriber refusal) with the backend's
+ * error verbatim, and `appleSide` is ALWAYS present — the one thing the tool
+ * cannot clear is the thing worth saying every single time.
+ */
+export interface TestResetReport {
+  sessionsRevoked: boolean;
+  rcSubscribersDeleted: string[];
+  rcSubscriberFailures: { appUserId: string; error: string }[];
+  lsCancelsEnqueued: number;
+  accountDeleted: boolean;
+  trialClaimsDeleted: number;
+  consumedOrdersDeleted: number;
+  failures: { step: string; error: string }[];
+  appleSide: string;
+}
+
 // ── billing tasks (the cancellation outbox) ───────────────────────────────────
 
 /** One owed provider action from `GET /admin/billing-tasks` (never a settled
