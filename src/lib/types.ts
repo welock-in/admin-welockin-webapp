@@ -18,6 +18,26 @@ export interface Overview {
   totalDevices: number;
 }
 
+/**
+ * Arrivals from a tagged link — the QR code on the flyers, today.
+ *
+ * `total` is every day ever; `days` is the recent window the dashboard draws,
+ * oldest first and zero-filled, because a day nobody scanned is a zero and not
+ * a gap.
+ */
+export interface ReferralSourceSummary {
+  source: string;
+  total: number;
+  today: number;
+  last7d: number;
+  days: { day: string; count: number }[];
+}
+
+export interface ReferralsSummary {
+  sources: ReferralSourceSummary[];
+  windowDays: number;
+}
+
 export interface LiveSession {
   id: string;
   userId: string;

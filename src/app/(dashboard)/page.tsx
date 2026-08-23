@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { backendGet, BackendError } from "@/lib/backend";
-import type { Overview } from "@/lib/types";
+import type { Overview, ReferralsSummary } from "@/lib/types";
 import { fmtHours, fmtNumber } from "@/lib/format";
 import { Card, PageHeader, StatCard } from "@/components/ui";
 import LiveSessions from "@/components/LiveSessions";
+import { Referrals } from "@/components/Referrals";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,16 @@ export default async function DashboardPage() {
       </div>
     );
   }
+
+  /**
+   * Fetched separately and allowed to fail on its own.
+   *
+   * The console and the API deploy independently, so an admin opening this page
+   * against a backend that predates the endpoint must still get their dashboard
+   * — a flyer counter is not worth an error screen over live sessions and
+   * revenue. `null` is rendered as "not available", never as zero.
+   */
+  const referrals = await backendGet<ReferralsSummary>("/admin/referrals").catch(() => null);
 
   const plans = Object.entries(data.usersByPlan).sort((a, b) => b[1] - a[1]);
 
@@ -77,6 +88,10 @@ export default async function DashboardPage() {
             </div>
           )}
         </Card>
+
+        <div className="lg:col-span-3">
+          <Referrals data={referrals} />
+        </div>
       </div>
     </div>
   );
