@@ -31,6 +31,15 @@ const nav = [
     ),
   },
   {
+    href: "/funnel",
+    label: "Funnel",
+    icon: (
+      <>
+        <path d="M3 4.5h18l-7 8v6.5l-4 2v-8.5l-7-8z" />
+      </>
+    ),
+  },
+  {
     href: "/protection",
     label: "Protection",
     icon: (

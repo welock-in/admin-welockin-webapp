@@ -280,6 +280,65 @@ export interface ProtectionListResult {
   take: number;
 }
 
+// ── onboarding funnel telemetry ───────────────────────────────────────────────
+
+/** One visited screen in a run's chronological log. */
+export interface FunnelStep {
+  step: string;
+  enteredAt: string | null;
+  leftAt: string | null;
+  /** Time spent on the step; null while still on it (or unknown). */
+  ms: number | null;
+}
+
+export interface FunnelRun {
+  runId: string;
+  platform: "windows" | "macos";
+  deviceId: string | null;
+  /** The machine's human name — the card title. */
+  deviceName: string | null;
+  osVersion: string | null;
+  appVersion: string | null;
+  funnelVersion: string | null;
+  locale: string | null;
+  withAccount: boolean | null;
+  screenTotal: number | null;
+  startedAt: string;
+  completedAt: string | null;
+  lastSeenAt: string;
+  lastStep: string | null;
+  /** active = seen in the last 10 min. */
+  status: "completed" | "active" | "abandoned";
+  /** startedAt -> completedAt (or lastSeenAt). */
+  durationMs: number;
+  steps: FunnelStep[];
+}
+
+export interface FunnelDropoffRow {
+  step: string;
+  reached: number;
+  droppedHere: number;
+}
+
+export interface FunnelSummary {
+  started: number;
+  completed: number;
+  active: number;
+  abandoned: number;
+  medianDurationMs: number | null;
+  /** Walk order. */
+  dropoff: FunnelDropoffRow[];
+}
+
+export interface FunnelResult {
+  /** Sorted lastSeenAt desc. */
+  runs: FunnelRun[];
+  summary: FunnelSummary;
+  windowDays: number;
+  /** Canonical walk order incl. platform-specific tails ("verify" win, "permissions" mac). */
+  stepOrder: string[];
+}
+
 export interface ProtectionLock {
   id: string;
   userId: string;
