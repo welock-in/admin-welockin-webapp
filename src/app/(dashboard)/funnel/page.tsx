@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { FunnelResult, FunnelRun } from "@/lib/types";
 import { apiGet } from "@/lib/client";
@@ -41,10 +42,88 @@ function platformLabel(p: string): string {
   return p === "windows" ? "Windows" : p === "macos" ? "macOS" : p;
 }
 
+/**
+ * The address, on the card. This page is where a signup is chased, and chasing
+ * it used to mean a trip to the users page and a guess about which account the
+ * machine turned into — so the email lives here, one click from the clipboard.
+ */
+function EmailRow({ run }: { run: FunnelRun }) {
+  const [copied, setCopied] = useState(false);
+
+  if (!run.email) {
+    return (
+      <p className="mt-1.5">
+        <Badge>no email yet</Badge>
+      </p>
+    );
+  }
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(run.email!);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // Clipboard is permission-gated and absent over plain http. The address
+      // is on screen and selectable either way, so a failure is silent.
+    }
+  };
+
+  return (
+    // The address WRAPS rather than truncates: reading it here instead of
+    // opening the profile is the whole point, and three cards to a row is not
+    // enough width for a long student address on one line.
+    <div className="mt-1.5 flex items-start gap-1.5 min-w-0">
+      {run.userId ? (
+        <Link
+          href={`/users/${run.userId}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-sm font-medium text-ink hover:text-accent break-all min-w-0"
+        >
+          {run.email}
+        </Link>
+      ) : (
+        <span className="text-sm font-medium text-ink break-all min-w-0">{run.email}</span>
+      )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          void copy();
+        }}
+        title="Copy the address"
+        aria-label={`Copy ${run.email}`}
+        className="flex-none text-muted hover:text-ink transition p-0.5 mt-0.5"
+      >
+        {copied ? (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        ) : (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        )}
+      </button>
+      {/* An older account on the same machine is a guess, not this walk's
+          signup — say so, or the wrong person gets the email. */}
+      {run.emailMatch === "device" && (
+        <span
+          className="flex-none text-[11px] text-muted mt-1"
+          title="Matched on the machine, not on this walk: the account is older than the run (a reinstall, or a second walk). Check before writing."
+        >
+          same machine
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function FunnelPage() {
   const [platform, setPlatform] = useState<PlatformFilter>("");
   const [days, setDays] = useState(14);
   const [data, setData] = useState<FunnelResult | null>(null);
+  const [withEmail, setWithEmail] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -76,6 +155,9 @@ export default function FunnelPage() {
   }, [platform, days]);
 
   const s = data?.summary;
+  const runs = data?.runs ?? [];
+  const emailed = runs.filter((r) => r.email !== null);
+  const shown = withEmail ? emailed : runs;
 
   return (
     <div className="p-4 sm:p-8">
@@ -97,6 +179,18 @@ export default function FunnelPage() {
                   {d}d
                 </button>
               ))}
+            </div>
+            {/* Not a server filter: the stat cards and the drop-off chart stay
+                the whole window's, so the numbers above never quietly change
+                meaning. Only the run list narrows. */}
+            <div className="flex gap-1 bg-black/[0.04] rounded-xl p-1">
+              <button
+                onClick={() => setWithEmail((v) => !v)}
+                aria-pressed={withEmail}
+                className={pill(withEmail)}
+              >
+                With email
+              </button>
             </div>
           </div>
         }
@@ -147,14 +241,25 @@ export default function FunnelPage() {
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-ink">Runs {data.runs.length > 0 ? `(${data.runs.length})` : ""}</h2>
+              <h2 className="text-sm font-bold text-ink">
+                Runs{" "}
+                {runs.length > 0 && (
+                  <span className="font-medium text-muted">
+                    {withEmail ? `(${emailed.length} of ${runs.length} with an email)` : `(${runs.length}, ${emailed.length} with an email)`}
+                  </span>
+                )}
+              </h2>
               <span className="text-[11px] text-muted">auto-refresh 10s</span>
             </div>
-            {data.runs.length === 0 ? (
-              <Card className="p-8 text-center text-sm text-muted">No funnel runs in this window yet.</Card>
+            {shown.length === 0 ? (
+              <Card className="p-8 text-center text-sm text-muted">
+                {runs.length === 0
+                  ? "No funnel runs in this window yet."
+                  : "No run in this window left an email."}
+              </Card>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 items-start">
-                {data.runs.map((run) => (
+                {shown.map((run) => (
                   <RunCard
                     key={run.runId}
                     run={run}
@@ -208,17 +313,27 @@ function RunCard({ run, open, onToggle }: { run: FunnelRun; open: boolean; onTog
     .filter(Boolean)
     .join(" · ");
 
+  // The card used to be ONE big <button>. It cannot be any more: the email row
+  // holds a link and a copy button, and an <a>/<button> inside a <button> is
+  // invalid HTML — the parser closes the outer one early and the card breaks.
+  // So the chevron is the real, labelled toggle, and the inert blocks around it
+  // stay click-to-expand for the mouse.
   return (
     <Card className="p-5">
-      <button onClick={onToggle} aria-expanded={open} className="w-full text-left">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-ink truncate min-w-0">{run.deviceName ?? "Unknown device"}</span>
-              <StatusBadge status={run.status} />
-            </div>
-            <p className="text-xs text-muted mt-1">{meta || "—"}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div onClick={onToggle} className="flex items-center gap-2 flex-wrap cursor-pointer">
+            <span className="font-semibold text-ink truncate min-w-0">{run.deviceName ?? "Unknown device"}</span>
+            <StatusBadge status={run.status} />
           </div>
+          <EmailRow run={run} />
+        </div>
+        <button
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-label={open ? "Hide the steps" : "Show the steps"}
+          className="flex-none mt-1 text-muted hover:text-ink transition"
+        >
           <svg
             width="16"
             height="16"
@@ -228,11 +343,15 @@ function RunCard({ run, open, onToggle }: { run: FunnelRun; open: boolean; onTog
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={`flex-none mt-1 text-muted transition-transform ${open ? "rotate-180" : ""}`}
+            className={`transition-transform ${open ? "rotate-180" : ""}`}
           >
             <path d="M6 9l6 6 6-6" />
           </svg>
-        </div>
+        </button>
+      </div>
+
+      <div onClick={onToggle} className="cursor-pointer">
+        <p className="text-xs text-muted mt-1">{meta || "—"}</p>
         <p className="text-xs text-muted mt-2">
           started {timeAgo(run.startedAt)} · {fmtMs(run.durationMs)}
           {run.lastStep && (
@@ -250,7 +369,7 @@ function RunCard({ run, open, onToggle }: { run: FunnelRun; open: boolean; onTog
             {run.screenTotal ? `${stepsLogged}/${run.screenTotal}` : stepsLogged} steps
           </span>
         </div>
-      </button>
+      </div>
 
       {open && (
         <div className="mt-4 pt-3 border-t border-black/5">

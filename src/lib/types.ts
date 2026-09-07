@@ -291,6 +291,14 @@ export interface FunnelStep {
   ms: number | null;
 }
 
+/**
+ * How confidently the backend tied an account to a run.
+ *  "run"    — this walk produced that account (its own submission id, or an
+ *             account minted while the run was live).
+ *  "device" — same machine, older account. An inference; the card says so.
+ */
+export type FunnelEmailMatch = "run" | "device";
+
 export interface FunnelRun {
   runId: string;
   platform: "windows" | "macos";
@@ -311,6 +319,11 @@ export interface FunnelRun {
   status: "completed" | "active" | "abandoned";
   /** startedAt -> completedAt (or lastSeenAt). */
   durationMs: number;
+  /** The account behind the walk, once one exists. Null until someone signs up
+   *  — which is exactly what the card marks. */
+  userId: string | null;
+  email: string | null;
+  emailMatch: FunnelEmailMatch | null;
   steps: FunnelStep[];
 }
 
