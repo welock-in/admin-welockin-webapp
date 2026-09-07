@@ -6,6 +6,7 @@ import type { UsersListResult } from "@/lib/types";
 import { apiGet } from "@/lib/client";
 import { fmtDuration, fmtDateShort, timeAgo, fmtNumber } from "@/lib/format";
 import { Card, PageHeader, Badge } from "@/components/ui";
+import CreateUserSheet from "@/components/CreateUserSheet";
 
 const TAKE = 25;
 
@@ -70,12 +71,23 @@ export default function UsersPage() {
         title="Profiles"
         subtitle={data ? `${fmtNumber(data.total)} accounts` : "All accounts"}
         right={
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by email…"
-            className="rounded-xl border border-black/10 bg-card px-3.5 py-2 text-sm outline-none focus:border-ink/40 w-64"
-          />
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by email…"
+              // 16px so iOS Safari does not zoom the page on focus, and
+              // full-width on a phone where a fixed 16rem would overflow.
+              className="flex-1 sm:flex-none rounded-xl border border-black/10 bg-card px-3.5 py-2 text-base sm:text-sm outline-none focus:border-ink/40 sm:w-64"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
+            />
+            {/* A new account lands at the top of the default sort (createdAt
+                desc), so a reload is enough to show it. */}
+            <CreateUserSheet onCreated={() => void load()} />
+          </div>
         }
       />
 
