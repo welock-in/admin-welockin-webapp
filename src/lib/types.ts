@@ -301,7 +301,7 @@ export type FunnelEmailMatch = "run" | "device";
 
 export interface FunnelRun {
   runId: string;
-  platform: "windows" | "macos";
+  platform: "windows" | "macos" | "ios";
   deviceId: string | null;
   /** The machine's human name — the card title. */
   deviceName: string | null;
@@ -348,7 +348,7 @@ export interface FunnelResult {
   runs: FunnelRun[];
   summary: FunnelSummary;
   windowDays: number;
-  /** Canonical walk order incl. platform-specific tails ("verify" win, "permissions" mac). */
+  /** Canonical walk order incl. platform-specific steps (desktop and iOS). */
   stepOrder: string[];
 }
 

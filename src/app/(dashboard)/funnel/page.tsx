@@ -7,12 +7,13 @@ import { apiGet } from "@/lib/client";
 import { fmtDuration, pct, timeAgo } from "@/lib/format";
 import { Badge, Card, PageHeader, StatCard } from "@/components/ui";
 
-type PlatformFilter = "" | "windows" | "macos";
+type PlatformFilter = "" | "windows" | "macos" | "ios";
 
 const PLATFORM_TABS: { value: PlatformFilter; label: string }[] = [
   { value: "", label: "All" },
   { value: "windows", label: "Windows" },
   { value: "macos", label: "macOS" },
+  { value: "ios", label: "iOS" },
 ];
 
 const WINDOW_CHOICES = [7, 14, 30];
@@ -39,7 +40,30 @@ function fmtClockUtc(iso: string | null): string {
 }
 
 function platformLabel(p: string): string {
-  return p === "windows" ? "Windows" : p === "macos" ? "macOS" : p;
+  return p === "windows" ? "Windows" : p === "macos" ? "macOS" : p === "ios" ? "iOS" : p;
+}
+
+const STEP_LABELS: Record<string, string> = {
+  intro: "Intro",
+  name: "Name",
+  age: "Age",
+  profile: "Profile",
+  university: "University",
+  screentime: "Screen time",
+  gauge: "Screen time",
+  shock: "Reality check",
+  calc: "Time projection",
+  analysis: "Analysis",
+  plan: "Plan",
+  commit: "Commitment",
+  account: "Account",
+  verify: "Verification",
+  paywall: "Paywall",
+  permissions: "Permissions",
+};
+
+function stepLabel(step: string): string {
+  return STEP_LABELS[step] ?? step;
 }
 
 /**
@@ -163,7 +187,11 @@ export default function FunnelPage() {
     <div className="p-4 sm:p-8">
       <PageHeader
         title="Funnel"
-        subtitle="Every signup walk, step by step, machine by machine."
+        subtitle={
+          platform === "ios"
+            ? "The mobile onboarding, screen by screen, iPhone by iPhone."
+            : "Every signup walk, step by step, device by device."
+        }
         right={
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex gap-1 bg-black/[0.04] rounded-xl p-1">
@@ -220,8 +248,8 @@ export default function FunnelPage() {
               <div className="space-y-2">
                 {s.dropoff.map((row) => (
                   <div key={row.step} className="flex items-center gap-3">
-                    <span className="w-28 flex-none text-sm font-medium text-ink capitalize truncate" title={row.step}>
-                      {row.step}
+                    <span className="w-28 flex-none text-sm font-medium text-ink truncate" title={row.step}>
+                      {stepLabel(row.step)}
                     </span>
                     <div className="flex-1 h-2 rounded-full bg-black/5 overflow-hidden">
                       <div
@@ -254,7 +282,9 @@ export default function FunnelPage() {
             {shown.length === 0 ? (
               <Card className="p-8 text-center text-sm text-muted">
                 {runs.length === 0
-                  ? "No funnel runs in this window yet."
+                  ? platform === "ios"
+                    ? "No iOS onboarding runs in this window yet."
+                    : "No funnel runs in this window yet."
                   : "No run in this window left an email."}
               </Card>
             ) : (
@@ -301,7 +331,7 @@ function RunCard({ run, open, onToggle }: { run: FunnelRun; open: boolean; onTog
     .filter(Boolean)
     .join(" · ");
 
-  const stepsLogged = run.steps.length;
+  const stepsLogged = new Set(run.steps.map((step) => step.step)).size;
   const progressPct =
     run.screenTotal && run.screenTotal > 0 ? Math.min(100, (stepsLogged / run.screenTotal) * 100) : 0;
 
@@ -323,7 +353,9 @@ function RunCard({ run, open, onToggle }: { run: FunnelRun; open: boolean; onTog
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div onClick={onToggle} className="flex items-center gap-2 flex-wrap cursor-pointer">
-            <span className="font-semibold text-ink truncate min-w-0">{run.deviceName ?? "Unknown device"}</span>
+            <span className="font-semibold text-ink truncate min-w-0">
+              {run.deviceName ?? (run.platform === "ios" ? "Unknown iPhone" : "Unknown device")}
+            </span>
             <StatusBadge status={run.status} />
           </div>
           <EmailRow run={run} />
@@ -357,7 +389,7 @@ function RunCard({ run, open, onToggle }: { run: FunnelRun; open: boolean; onTog
           {run.lastStep && (
             <>
               {" · last step "}
-              <span className="text-ink font-medium capitalize">{run.lastStep}</span>
+              <span className="text-ink font-medium">{stepLabel(run.lastStep)}</span>
             </>
           )}
         </p>
@@ -387,7 +419,7 @@ function RunCard({ run, open, onToggle }: { run: FunnelRun; open: boolean; onTog
               <tbody>
                 {run.steps.map((st, i) => (
                   <tr key={`${st.step}-${i}`} className="border-b border-black/[0.04] last:border-0">
-                    <td className="py-1.5 pr-3 capitalize text-ink">{st.step}</td>
+                    <td className="py-1.5 pr-3 text-ink">{stepLabel(st.step)}</td>
                     <td className="py-1.5 pr-3 font-mono text-xs text-muted">{fmtClockUtc(st.enteredAt)}</td>
                     <td className="py-1.5 text-right tabular-nums">
                       {/* An open entry only means "live" while the RUN is live —
