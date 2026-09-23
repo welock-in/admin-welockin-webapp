@@ -151,6 +151,21 @@ export interface AdminUser {
   compedUntil?: string | null;
   accessRevoked?: boolean | null;
   revokedReason?: string | null;
+  desktopLifetimeGrantedAt?: string | null;
+  iosLifetimeGrantedAt?: string | null;
+  /** Reserved at account creation; grants access only after email verification. */
+  signupLifetimeOffer?: "ios" | "desktop" | null;
+}
+
+export interface SignupLifetimeSettings {
+  iosSignupLifetimeEnabled: boolean;
+  desktopSignupLifetimeEnabled: boolean;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface SignupLifetimeSettingsResult {
+  settings: SignupLifetimeSettings;
 }
 
 export interface AdminPurchase {

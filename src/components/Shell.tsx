@@ -60,6 +60,16 @@ const nav = [
     ),
   },
   {
+    href: "/signup-offers",
+    label: "Signup offers",
+    icon: (
+      <>
+        <rect x="3" y="8" width="18" height="4" rx="1" />
+        <path d="M5 12v9h14v-9M12 8v13M12 8H8a3 3 0 1 1 3-3l1 3ZM12 8h4a3 3 0 1 0-3-3l-1 3Z" />
+      </>
+    ),
+  },
+  {
     href: "/notifications",
     label: "Notifications",
     icon: (
