@@ -7,7 +7,7 @@ import { Card, PageHeader, Badge } from "@/components/ui";
 
 /* Backend shapes (/api/admin/notifications/*). */
 type SendResult = { audience: string; recipients: number; sent: number; failed: number; invalid: number; pruned: number; deduped: number };
-type Delivery = { id: string; userId: string | null; title: string; body: string; status: string; source: string; createdAt: string };
+type Delivery = { id: string; userId: string | null; title: string; body: string; status: string; error?: string | null; source: string; createdAt: string };
 type Template = { id: string; key: string; title: string; body: string; data: unknown; category: string; sound: string | null; active: boolean; createdAt: string };
 type Rule = { id: string; name: string; event: string; condition: unknown; templateKey: string; audience: unknown; dedupeKeyTemplate: string | null; enabled: boolean; priority: number; createdAt: string };
 type Tab = "send" | "templates" | "rules";
@@ -54,6 +54,7 @@ function SendTab() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<SendResult | null>(null);
   const [deliveries, setDeliveries] = useState<Delivery[] | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -92,6 +93,7 @@ function SendTab() {
     <div className="grid gap-6 lg:grid-cols-2">
       <Card className="p-5">
         <h2 className="text-sm font-bold text-ink mb-4">Compose</h2>
+        <p className="text-xs text-muted mb-4">Sends to registered mobile devices for the selected accounts.</p>
         <label className={labelCls}>Audience</label>
         <div className="flex gap-1 bg-black/[0.04] rounded-xl p-1 mb-4 w-max">
           {(["all", "user"] as const).map((m) => (
@@ -118,7 +120,7 @@ function SendTab() {
         {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
         {result && (
           <p className="text-sm text-muted mt-3">
-            Sent to <b className="text-ink">{result.sent}</b> / {result.recipients} device(s)
+            Accepted by Expo: <b className="text-ink">{result.sent}</b> / {result.recipients} device(s)
             {result.failed > 0 && <> · {result.failed} failed</>}
             {result.invalid > 0 && <> · {result.invalid} invalid</>}
             {result.recipients === 0 && " — no registered devices yet"}
@@ -127,7 +129,19 @@ function SendTab() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="text-sm font-bold text-ink mb-4">Recent deliveries</h2>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h2 className="text-sm font-bold text-ink">Recent deliveries</h2>
+          <button className={btnGhost} disabled={checking} onClick={async () => {
+            setChecking(true);
+            setError("");
+            try {
+              await apiSend("admin/notifications/receipts", "POST", {});
+              await load();
+            } catch (e) { setError(e instanceof Error ? e.message : "Receipt check failed"); }
+            finally { setChecking(false); }
+          }}>{checking ? "Checking…" : "Check receipts"}</button>
+        </div>
+        <p className="text-xs text-muted mb-3">Receipts are checked after 15 minutes. Provider confirmation does not confirm that a banner was displayed.</p>
         {deliveries === null ? (
           <p className="text-sm text-muted">Loading…</p>
         ) : deliveries.length === 0 ? (
@@ -139,9 +153,10 @@ function SendTab() {
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-ink truncate">{d.title}</div>
                   <div className="text-xs text-muted truncate">{d.body}</div>
+                  {d.error && <div className="text-xs text-red-600 break-words">{d.error}</div>}
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-none">
-                  <Badge tone={d.status === "sent" ? "green" : d.status === "invalid" ? "amber" : "red"}>{d.status}</Badge>
+                  <Badge tone={d.status === "provider_confirmed" ? "green" : d.status === "sent" || d.status === "invalid" || d.status === "receipt_missing" ? "amber" : "red"}>{d.status === "sent" ? "Expo accepted" : d.status === "provider_confirmed" ? "Provider confirmed" : d.status}</Badge>
                   <span className="text-[11px] text-muted">{timeAgo(d.createdAt)}</span>
                 </div>
               </div>
