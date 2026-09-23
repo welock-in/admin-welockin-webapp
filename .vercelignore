@@ -1,0 +1,4 @@
+*.log
+QA-*.md
+node_modules
+.next
