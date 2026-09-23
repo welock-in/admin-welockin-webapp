@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiSend } from "@/lib/client";
 import { Badge } from "@/components/ui";
 import ResetTestUser from "@/components/ResetTestUser";
+import SignupLifetimeGrants from "@/components/SignupLifetimeGrants";
 import { fmtDate } from "@/lib/format";
 import type { AdminUser, AdminPurchase, AdminSubscription } from "@/lib/types";
 
@@ -166,6 +167,8 @@ export default function PaymentPanel({
           {revoked && <Badge tone="red">revoked</Badge>}
         </div>
       </div>
+
+      <SignupLifetimeGrants user={user} />
 
       {/* What they actually paid for — the real record, not the cache. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
