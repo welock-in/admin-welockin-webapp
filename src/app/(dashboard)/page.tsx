@@ -1,5 +1,6 @@
+import DurationQuality from "@/components/DurationQuality";
 import { redirect } from "next/navigation";
-import { backendGet, BackendError } from "@/lib/backend";
+import { backendGet, BackendError, expiredSessionRedirect } from "@/lib/backend";
 import type { Overview, ReferralsSummary } from "@/lib/types";
 import { fmtHours, fmtNumber } from "@/lib/format";
 import { Card, PageHeader, StatCard } from "@/components/ui";
@@ -13,7 +14,7 @@ export default async function DashboardPage() {
   try {
     data = await backendGet<Overview>("/admin/overview");
   } catch (e) {
-    if (e instanceof BackendError && e.status === 401) redirect("/login");
+    if (e instanceof BackendError && e.status === 401) redirect(expiredSessionRedirect(e, "/"));
     return (
       <div className="p-4 sm:p-8">
         <PageHeader title="Dashboard" />
@@ -46,6 +47,7 @@ export default async function DashboardPage() {
     <div className="p-4 sm:p-8">
       <PageHeader title="Dashboard" subtitle="Real-time activity across WeLockin." />
 
+      <DurationQuality quality={data.durationQuality} />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
         <StatCard label="Live now" value={fmtNumber(data.liveSessionsCount)} accent sub="focusing right now" />
         <StatCard label="Total users" value={fmtNumber(data.totalUsers)} sub={`${data.suspendedUsers} suspended`} />

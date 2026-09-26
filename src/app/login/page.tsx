@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { safeReturnPath } from "@/lib/admin-session";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function LoginPage() {
         return;
       }
       const from = new URLSearchParams(window.location.search).get("from");
-      router.replace(from && from.startsWith("/") ? from : "/");
+      router.replace(safeReturnPath(from));
       router.refresh();
     } catch {
       setErr("Network error — is the backend reachable?");

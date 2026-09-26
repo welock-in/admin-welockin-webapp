@@ -1,5 +1,6 @@
+import DurationQuality from "@/components/DurationQuality";
 import { redirect } from "next/navigation";
-import { backendGet, BackendError } from "@/lib/backend";
+import { backendGet, BackendError, expiredSessionRedirect } from "@/lib/backend";
 import type { UserDetail } from "@/lib/types";
 import { fmtDuration, fmtDate, fmtDateShort, fmtClock, pct, fmtNumber, timeAgo } from "@/lib/format";
 import { Card, PageHeader, StatCard, Badge, SectionTitle, BackLink } from "@/components/ui";
@@ -21,7 +22,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
   try {
     d = await backendGet<UserDetail>(`/admin/users/${params.id}`);
   } catch (e) {
-    if (e instanceof BackendError && e.status === 401) redirect("/login");
+    if (e instanceof BackendError && e.status === 401) redirect(expiredSessionRedirect(e, `/users/${params.id}`));
     return (
       <div className="p-4 sm:p-8">
         <BackLink href="/users">Back to profiles</BackLink>
@@ -93,6 +94,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
       </div>
 
       {/* Stat grid */}
+      <DurationQuality quality={stats.durationQuality} />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
         <StatCard label="Total sessions" value={fmtNumber(stats.totalSessions)} sub={`${stats.abortedSessions} aborted`} />
         <StatCard label="Completion" value={pct(stats.completionRate)} sub={`${stats.completedSessions} completed`} />
@@ -192,7 +194,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
               </thead>
               <tbody>
                 {recentEvents.map((ev) => {
-                  const dur = Math.max(0, Math.floor((new Date(ev.endedAt).getTime() - new Date(ev.startedAt).getTime()) / 1000));
+                  const dur = ev.creditedSeconds;
                   return (
                     <tr key={ev.id} className="border-b border-black/[0.04]">
                       <td className="py-2.5 pr-3">
@@ -200,7 +202,9 @@ export default async function UserDetailPage({ params }: { params: { id: string 
                         {ev.hardLock && <Badge tone="red">hard</Badge>}
                       </td>
                       <td className="py-2.5 pr-3 text-muted">{fmtDate(ev.startedAt)}</td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums text-ink">{fmtDuration(dur)}</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums text-ink">{dur == null ? "Unavailable" : fmtDuration(dur)}
+                        <span className="block text-xs text-muted">{ev.credited === false ? "Excluded from totals" : ev.durationBasis === "estimated" ? "Estimated" : ev.durationBasis === "measured" ? "Measured" : "No reliable duration"}</span>
+                      </td>
                       <td className="py-2.5 pr-3 text-right tabular-nums text-muted">{ev.killedTotal}</td>
                       <td className="py-2.5 pr-3">
                         {ev.completed ? <Badge tone="green">completed</Badge> : <Badge tone="amber">ended early</Badge>}

@@ -2,12 +2,13 @@
   "name": "welockin-admin",
   "version": "0.1.0",
   "private": true,
-  "description": "WeLockin admin console — live sessions, profiles and statistics.",
+  "description": "WeLockin admin console \u2014 live sessions, profiles and statistics.",
   "scripts": {
     "dev": "next dev -p 3210",
     "build": "next build",
     "start": "next start -p 3210",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test scripts/test-admin-session.cjs"
   },
   "dependencies": {
     "next": "^14.2.35",

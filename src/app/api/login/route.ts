@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { COOKIE_NAME, backendBase } from "@/lib/backend";
+import { backendBase } from "@/lib/backend";
+
+import { randomUUID } from "node:crypto";
+import { adminSession, COOKIE_NAME, SESSION_MARKER, COOKIE_OPTIONS } from "@/lib/admin-session";
 
 // Proxies the login to the backend and, on success, stores the returned admin
 // JWT in an httpOnly cookie. The browser never sees the raw token.
@@ -28,13 +31,14 @@ export async function POST(req: Request) {
     );
   }
 
-  cookies().set(COOKIE_NAME, data.token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 12, // 12h, matches the admin token lifetime
-  });
+  const jar = cookies();
+  const previous = adminSession(jar);
+  const version = randomUUID();
+  jar.delete(previous.cookieName);
+  jar.delete(COOKIE_NAME);
+  jar.set(`${COOKIE_NAME}_${version}`, data.token, COOKIE_OPTIONS);
+  // This random generation identifies a login; it is not an authentication token.
+  jar.set(SESSION_MARKER, version, { ...COOKIE_OPTIONS, httpOnly: false });
 
   return NextResponse.json({ ok: true });
 }

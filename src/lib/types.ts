@@ -1,7 +1,16 @@
+export interface DurationQuality {
+  measuredSeconds: number;
+  estimatedSeconds: number;
+  measuredEvents: number;
+  estimatedEvents: number;
+  unavailableEvents: number;
+}
+
 // Shapes mirroring the backend admin API responses (cloud-backend/src/routes/admin.ts
 // + services/admin-stats.ts). Kept in sync by hand.
 
 export interface Overview {
+  durationQuality?: DurationQuality;
   totalUsers: number;
   suspendedUsers: number;
   usersByPlan: Record<string, number>;
@@ -62,6 +71,7 @@ export interface LiveSession {
 }
 
 export interface UserListItem {
+  durationQuality?: DurationQuality;
   id: string;
   email: string;
   plan: string;
@@ -82,6 +92,7 @@ export interface UsersListResult {
 }
 
 export interface UserStats {
+  durationQuality?: DurationQuality;
   totalSessions: number;
   completedSessions: number;
   abortedSessions: number;
@@ -119,6 +130,9 @@ export interface Device {
 }
 
 export interface FocusEvent {
+  credited?: boolean;
+  creditedSeconds?: number;
+  durationBasis?: "measured" | "estimated" | "unavailable";
   id: string;
   name: string;
   startedAt: string;

@@ -149,7 +149,9 @@ export default function UsersPage() {
                     {u.status === "suspended" ? <Badge tone="red">suspended</Badge> : <Badge tone="green">active</Badge>}
                   </td>
                   <td className="py-3 px-3 text-right tabular-nums text-ink">{fmtNumber(u.sessionCount)}</td>
-                  <td className="py-3 px-3 text-right tabular-nums text-ink">{fmtDuration(u.totalFocusSeconds)}</td>
+                  <td className="py-3 px-3 text-right tabular-nums text-ink">{fmtDuration(u.totalFocusSeconds)}
+                    <span className="block text-xs text-muted">{u.durationQuality ? `${fmtDuration(u.durationQuality.estimatedSeconds)} estimated` : "Provenance unavailable"}</span>
+                  </td>
                   <td className="py-3 px-3 text-right tabular-nums text-muted">{u.deviceCount}</td>
                   <td className="py-3 px-3 text-muted">{u.lastActiveAt ? timeAgo(u.lastActiveAt) : "—"}</td>
                   <td className="py-3 px-4 text-muted">{fmtDateShort(u.createdAt)}</td>

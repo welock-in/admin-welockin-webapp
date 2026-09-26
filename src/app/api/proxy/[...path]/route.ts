@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { COOKIE_NAME, backendBase } from "@/lib/backend";
+import { backendBase } from "@/lib/backend";
+
+import { adminSession } from "@/lib/admin-session";
 
 // Authenticated pass-through to the backend admin API for CLIENT components
 // (live-session polling, moderation actions). Injects the httpOnly admin token
@@ -9,7 +11,8 @@ import { COOKIE_NAME, backendBase } from "@/lib/backend";
 export const dynamic = "force-dynamic";
 
 async function forward(req: Request, path: string[]): Promise<NextResponse> {
-  const token = cookies().get(COOKIE_NAME)?.value;
+  const session = adminSession(cookies());
+  const token = session.token;
   if (!token) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
@@ -50,10 +53,12 @@ async function forward(req: Request, path: string[]): Promise<NextResponse> {
 
   const res = await fetch(target, init);
   const body = await res.text();
-  return new NextResponse(body, {
+  const response = new NextResponse(body, {
     status: res.status,
     headers: { "content-type": res.headers.get("content-type") ?? "application/json" },
   });
+  if (res.status === 401) response.cookies.delete(session.cookieName);
+  return response;
 }
 
 export async function GET(req: Request, ctx: { params: { path: string[] } }) {

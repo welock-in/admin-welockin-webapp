@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const COOKIE_NAME = "wl_admin";
+import { adminSession } from "@/lib/admin-session";
 
 // Gate every page behind the admin session cookie. The login page and its API
 // route are public; everything else redirects to /login when unauthenticated.
@@ -16,7 +16,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico";
 
-  const token = req.cookies.get(COOKIE_NAME)?.value;
+  const token = adminSession(req.cookies).token;
 
   if (!token && !isPublic) {
     const url = req.nextUrl.clone();
@@ -25,13 +25,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Already logged in but visiting /login → send to the dashboard.
-  if (token && pathname === "/login") {
-    const url = req.nextUrl.clone();
-    url.pathname = "/";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
+  // Login stays accessible even if a present credential is expired or invalid.
 
   return NextResponse.next();
 }

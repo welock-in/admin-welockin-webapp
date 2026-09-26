@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 // an httpOnly cookie so it is never exposed to browser JS; server components and
 // route handlers read it from here.
 
-export const COOKIE_NAME = "wl_admin";
+export { COOKIE_NAME } from "./admin-session";
+import { adminSession, expiryPath } from "./admin-session";
 
 export function backendBase(): string {
   const base = process.env.BACKEND_API_URL ?? "https://app.connect.welock.in/api";
@@ -13,12 +14,12 @@ export function backendBase(): string {
 }
 
 export function getAdminToken(): string | undefined {
-  return cookies().get(COOKIE_NAME)?.value;
+  return adminSession(cookies()).token;
 }
 
 export class BackendError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, public sessionVersion = "legacy") {
     super(message);
     this.status = status;
     this.name = "BackendError";
@@ -31,8 +32,9 @@ export class BackendError extends Error {
  * admin session expired and the caller should redirect to /login.
  */
 export async function backendGet<T>(path: string): Promise<T> {
-  const token = getAdminToken();
-  if (!token) throw new BackendError(401, "Not authenticated");
+  const session = adminSession(cookies());
+  const token = session.token;
+  if (!token) throw new BackendError(401, "Not authenticated", session.version);
   const res = await fetch(`${backendBase()}${path.startsWith("/") ? path : `/${path}`}`, {
     headers: { authorization: `Bearer ${token}` },
     cache: "no-store",
@@ -45,7 +47,11 @@ export async function backendGet<T>(path: string): Promise<T> {
     } catch {
       /* non-json error body */
     }
-    throw new BackendError(res.status, message);
+    throw new BackendError(res.status, message, session.version);
   }
   return (await res.json()) as T;
+}
+
+export function expiredSessionRedirect(error: BackendError, from = "/") {
+  return expiryPath(error.sessionVersion, from);
 }
