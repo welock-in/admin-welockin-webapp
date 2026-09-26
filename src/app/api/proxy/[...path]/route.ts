@@ -11,7 +11,7 @@ import { adminSession } from "@/lib/admin-session";
 export const dynamic = "force-dynamic";
 
 async function forward(req: Request, path: string[]): Promise<NextResponse> {
-  const session = adminSession(cookies());
+  const session = adminSession(await cookies());
   const token = session.token;
   if (!token) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -61,15 +61,16 @@ async function forward(req: Request, path: string[]): Promise<NextResponse> {
   return response;
 }
 
-export async function GET(req: Request, ctx: { params: { path: string[] } }) {
-  return forward(req, ctx.params.path);
+type RouteContext = { params: Promise<{ path: string[] }> };
+export async function GET(req: Request, ctx: RouteContext) {
+  return forward(req, (await ctx.params).path);
 }
-export async function POST(req: Request, ctx: { params: { path: string[] } }) {
-  return forward(req, ctx.params.path);
+export async function POST(req: Request, ctx: RouteContext) {
+  return forward(req, (await ctx.params).path);
 }
-export async function PATCH(req: Request, ctx: { params: { path: string[] } }) {
-  return forward(req, ctx.params.path);
+export async function PATCH(req: Request, ctx: RouteContext) {
+  return forward(req, (await ctx.params).path);
 }
-export async function DELETE(req: Request, ctx: { params: { path: string[] } }) {
-  return forward(req, ctx.params.path);
+export async function DELETE(req: Request, ctx: RouteContext) {
+  return forward(req, (await ctx.params).path);
 }

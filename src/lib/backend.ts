@@ -13,8 +13,8 @@ export function backendBase(): string {
   return base.replace(/\/$/, "");
 }
 
-export function getAdminToken(): string | undefined {
-  return adminSession(cookies()).token;
+export async function getAdminToken(): Promise<string | undefined> {
+  return adminSession(await cookies()).token;
 }
 
 export class BackendError extends Error {
@@ -32,7 +32,7 @@ export class BackendError extends Error {
  * admin session expired and the caller should redirect to /login.
  */
 export async function backendGet<T>(path: string): Promise<T> {
-  const session = adminSession(cookies());
+  const session = adminSession(await cookies());
   const token = session.token;
   if (!token) throw new BackendError(401, "Not authenticated", session.version);
   const res = await fetch(`${backendBase()}${path.startsWith("/") ? path : `/${path}`}`, {

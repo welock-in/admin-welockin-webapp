@@ -35,7 +35,7 @@ test('login remains accessible for absent, fake and expired credentials; private
 });
 
 test('return URLs cannot escape the admin or re-enter its login/API loop', () => {
-  for (const from of ['//evil.test', '/\\evil.test', 'https://evil.test', '/login', '/api/logout', '/\nevil', null]) assert.equal(session.safeReturnPath(from), '/');
+  for (const from of ['//evil.test', '/\\evil.test', '/%2Fevil.test', '/%5cevil.test', '/%252Fevil.test', '/%0aevil', 'https://evil.test', '/login', '/api/logout', '/\nevil', null]) assert.equal(session.safeReturnPath(from), '/');
   assert.equal(session.safeReturnPath('/users/123?tab=focus'), '/users/123?tab=focus');
 });
 
@@ -56,7 +56,7 @@ test('expired server session is cleared through a route, while a newer login rem
 test('proxy expires exactly its request credential on 401, never on 403 or a server failure', async () => {
   for (const status of [200, 401, 403, 503]) {
     const cookies = jar({ wl_admin_session: v1, [`wl_admin_${v1}`]: 'old-token' });
-    const proxy = load('src/app/api/proxy/[...path]/route.ts', { ...libs, 'next/headers': { cookies: () => cookies },
+    const proxy = load('src/app/api/proxy/[...path]/route.ts', { ...libs, 'next/headers': { cookies: async () => cookies },
       '@/lib/backend': { backendBase: () => 'https://backend.test/api' } }, {
       fetch: async (_, init) => {
         assert.equal(init.headers.authorization, 'Bearer old-token');
@@ -65,7 +65,7 @@ test('proxy expires exactly its request credential on 401, never on 403 or a ser
         return new Response('{}', { status });
       },
     });
-    const response = await proxy.GET(new Request('https://admin.test/api/proxy/admin/overview'), { params: { path: ['admin', 'overview'] } });
+    const response = await proxy.GET(new Request('https://admin.test/api/proxy/admin/overview'), { params: Promise.resolve({ path: ['admin', 'overview'] }) });
     assert.equal(response.status, status);
     const expired = response.cookies.getAll();
     assert.equal(expired.length, status === 401 ? 1 : 0);
@@ -77,7 +77,7 @@ test('proxy expires exactly its request credential on 401, never on 403 or a ser
 test('server backend errors retain request generation and distinguish authentication from availability', async () => {
   for (const status of [401, 403, 503]) {
     const cookies = jar({ wl_admin: 'expired' });
-    const backend = load('src/lib/backend.ts', { 'server-only': {}, './admin-session': session, 'next/headers': { cookies: () => cookies } }, {
+    const backend = load('src/lib/backend.ts', { 'server-only': {}, './admin-session': session, 'next/headers': { cookies: async () => cookies } }, {
       fetch: async () => new Response('{"error":"fixture"}', { status }),
     });
     await assert.rejects(() => backend.backendGet('/admin/overview'), e => e.status === status && e.sessionVersion === 'legacy');
@@ -87,7 +87,7 @@ test('server backend errors retain request generation and distinguish authentica
 
 test('new login installs its own httpOnly credential cookie and retires the previous one', async () => {
   const cookies = jar({ wl_admin: 'invalid' });
-  const login = load('src/app/api/login/route.ts', { ...libs, 'node:crypto': { randomUUID: () => v2 }, 'next/headers': { cookies: () => cookies },
+  const login = load('src/app/api/login/route.ts', { ...libs, 'node:crypto': { randomUUID: () => v2 }, 'next/headers': { cookies: async () => cookies },
     '@/lib/backend': { backendBase: () => 'https://backend.test/api' } }, { fetch: async () => new Response('{"token":"fresh"}') });
   assert.equal((await login.POST(new Request('https://admin.test/api/login', { method: 'POST', body: '{"username":"test","password":"fixture"}' }))).status, 200);
   assert.equal(cookies.get('wl_admin'), undefined);

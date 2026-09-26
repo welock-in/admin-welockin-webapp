@@ -17,12 +17,13 @@ function count(v: unknown): number {
   return Array.isArray(v) ? v.length : 0;
 }
 
-export default async function UserDetailPage({ params }: { params: { id: string } }) {
+export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   let d: UserDetail;
   try {
-    d = await backendGet<UserDetail>(`/admin/users/${params.id}`);
+    d = await backendGet<UserDetail>(`/admin/users/${id}`);
   } catch (e) {
-    if (e instanceof BackendError && e.status === 401) redirect(expiredSessionRedirect(e, `/users/${params.id}`));
+    if (e instanceof BackendError && e.status === 401) redirect(expiredSessionRedirect(e, `/users/${id}`));
     return (
       <div className="p-4 sm:p-8">
         <BackLink href="/users">Back to profiles</BackLink>

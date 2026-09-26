@@ -22,7 +22,7 @@ export default function LiveSessions() {
   const [error, setError] = useState("");
   const [, tick] = useState(0);
   const [ending, setEnding] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setInterval>>();
+  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const load = useCallback(async () => {
     try {

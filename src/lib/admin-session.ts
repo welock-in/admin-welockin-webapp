@@ -17,6 +17,7 @@ export function safeReturnPath(value: string | null | undefined): string {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u0020]/.test(value)) return "/";
   try {
     const parsed = new URL(value, "https://admin.invalid");
+    if (/%(?:25)*(?:2f|5c|0[0-9a-f]|1[0-9a-f]|20)/i.test(parsed.pathname)) return "/";
     if (parsed.origin !== "https://admin.invalid" || /^\/(login|api)(\/|$)/.test(parsed.pathname)) return "/";
     return parsed.pathname + parsed.search + parsed.hash;
   } catch { return "/"; }

@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const jar = cookies();
+  const jar = await cookies();
   const previous = adminSession(jar);
   const version = randomUUID();
   jar.delete(previous.cookieName);
