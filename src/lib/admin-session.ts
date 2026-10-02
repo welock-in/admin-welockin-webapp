@@ -7,6 +7,8 @@ export const COOKIE_OPTIONS = { httpOnly: true, sameSite: "lax" as const,
 
 type CookieReader = { get(name: string): { value: string } | undefined };
 export function adminSession(cookies: CookieReader) {
+  // Le marqueur sélectionne le cookie de cette génération ; il n'autorise
+  // aucune action sans le JWT correspondant, validé ensuite par le backend.
   const marker = cookies.get(SESSION_MARKER)?.value;
   const version = marker && /^[a-f0-9-]{36}$/.test(marker) ? marker : "legacy";
   const cookieName = version === "legacy" ? COOKIE_NAME : `${COOKIE_NAME}_${version}`;

@@ -32,6 +32,8 @@ export class BackendError extends Error {
  * admin session expired and the caller should redirect to /login.
  */
 export async function backendGet<T>(path: string): Promise<T> {
+  // Capturer la génération avant le fetch permet au handler d'expiration
+  // d'ignorer cette erreur si une nouvelle connexion termine entre-temps.
   const session = adminSession(await cookies());
   const token = session.token;
   if (!token) throw new BackendError(401, "Not authenticated", session.version);

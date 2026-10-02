@@ -12,6 +12,8 @@ const POLL_MS = 5000;
 // Live remaining, extrapolated between the ~5-min heartbeats so the countdown
 // still moves each second (the backend value is only refreshed on each beat).
 function liveRemain(s: LiveSession): number {
+  // L'extrapolation concerne seulement l'affichage : une phase non running
+  // garde la valeur serveur et ne consomme pas de temps entre deux lectures.
   if (s.phase !== "running") return s.remainSeconds;
   const elapsed = (Date.now() - new Date(s.lastHeartbeatAt).getTime()) / 1000;
   return Math.max(0, Math.round(s.remainSeconds - elapsed));

@@ -1,5 +1,14 @@
 # WeLockin Admin
 
+## Documentation à jour
+
+Référence : `origin/main` au 3 octobre 2026 (`47b955c`), paquet privé `0.1.0`.
+
+- [Architecture et contrats backend](docs/ARCHITECTURE.md) : pages, sessions, proxy, données et limites.
+- [Développement et vérification](docs/DEVELOPMENT.md) : setup, commandes présentes et protocole local.
+- [Notes de version](CHANGELOG.md) : historique Git sélectionné avec dates et SHAs.
+- [Qualification locale des offres](QA-SIGNUP-OFFERS.md) : résultats datés et fixtures ; ce guide ne décrit pas l'état actuel de production.
+
 Operations console for WeLockin: a real-time view of who is focusing right now,
 every user profile with detailed stats, account moderation, and management of the
 curated addiction-protection blocklist. Built with **Next.js (App Router) +
@@ -15,7 +24,7 @@ its own — no database.
 ## Architecture & auth
 
 The admin JWT is obtained from the backend and kept in an **httpOnly cookie**
-(`wl_admin`), never exposed to browser JavaScript. Two paths reach the backend:
+(`wl_admin_<uuid>` for each login; legacy `wl_admin` is still recognized), never exposed to browser JavaScript. A nonsecret `wl_admin_session` marker identifies the login generation so a delayed 401 cannot invalidate a newer login. Two paths reach the backend:
 
 - **Server Components** read the cookie and call the backend directly
   (`src/lib/backend.ts` → `backendGet`). Initial page loads render server-side.
@@ -24,8 +33,10 @@ The admin JWT is obtained from the backend and kept in an **httpOnly cookie**
   injects the token from the cookie server-side and forwards to the backend.
   Supported methods: `GET`, `POST`, `PATCH`, `DELETE`.
 
-`src/middleware.ts` gates every route behind the cookie, redirecting to `/login`
-when it is missing.
+`src/middleware.ts` gates private page navigations behind cookie presence,
+redirecting to `/login` when it is missing. API handlers enforce their own rules;
+the login page stays accessible with expired/invalid cookies. The backend validates
+the actual JWT, while `/api/session/expired` clears only the matching generation.
 
 **Credentials live in the *backend's* environment** (`ADMIN_USERNAME` /
 `ADMIN_PASSWORD` / `ADMIN_JWT_SECRET`), not in this app. Sign-in on `/login`
@@ -39,16 +50,19 @@ forwards them to `POST /api/admin/login`, which returns a short-lived admin JWT
 | Route | What it shows | Backend endpoints used |
 |---|---|---|
 | `/login` | Username/password sign-in. | `POST /api/admin/login` (via `/api/login`) |
-| `/` — **Dashboard** | Global stat cards (live now, total/suspended users, sessions today/7d, all-time & 7d focus time, active users, new users, devices) + a live-sessions panel that polls every ~10 s. | `GET /admin/overview`, `GET /admin/live-sessions` (polled) |
+| `/` — **Dashboard** | Global stat cards (live now, total/suspended users, sessions today/7d, all-time & 7d focus time, active users, new users, devices) + a live-sessions panel that polls every 5 s. | `GET /admin/overview`, `GET /admin/live-sessions` (polled) |
 | `/users` | Searchable, paginated user list with per-user rollups (devices, sessions, focus time, last active, live-now). | `GET /admin/users?search=&skip=&take=&sortBy=&sortDir=` |
 | `/users/[id]` | Full profile: identity, devices, a rich stat pack, synced snapshot, live sessions, recent events — plus **moderation**: suspend / unsuspend, set plan (audited grant/withdraw with reason, end date, and typed confirmation for a permanent lifetime), delete account, and force-end a live session. Includes the **payments & entitlement panel** (`PaymentPanel`): purchases and subscriptions as recorded, comp / revoke / trial reset, cancel & reactivate a subscription, and (when test mode is on) the synthetic-subscription test lab. | `GET /admin/users/:id`, `POST /admin/users/:id/{suspend,unsuspend,plan,comp,revoke,trial-reset,cancel-subscription,reactivate-subscription,test-subscription,subscription-transition,subscription-time}`, `DELETE /admin/users/:id{,/comp,/revoke,/test-subscription/:subId}`, `POST /admin/live-sessions/:id/force-end` |
 | `/billing` | **Billing tasks** — the cancellation outbox owed to Lemon Squeezy. Pending rows retry on their own; **dead-lettered** rows (attempts exhausted, still unsettled) are highlighted red with a per-row **Replay**, plus a global **Drain now**. The sidebar shows a red badge with the dead-letter count. | `GET /admin/billing-tasks`, `POST /admin/billing-tasks/drain`, `POST /admin/billing-tasks/:id/replay` |
 | `/protection` | **Addiction-protection** admin. Two tabs: **Blocklist** (search/filter, add one entry, bulk-import many, toggle active, delete) and **Active protection** (every account with protection ON — email, method, the partner OTP or lock-until date, and a force-disable), auto-refreshed. | `GET/POST /admin/addiction-protection`, `POST /admin/addiction-protection/import`, `PATCH/DELETE /admin/addiction-protection/:id`, `GET /admin/addiction-protection/active`, `POST /admin/addiction-protection/active/:id/disable` |
 | `/notifications` | Push-notification console: send an ad-hoc push, see recent deliveries, and manage templates + rules. | `POST /admin/notifications/send`, `GET /admin/notifications/deliveries`, `GET/POST/PATCH/DELETE /admin/notifications/{templates,rules}` |
+| `/funnel` | Signup runs by platform (Windows/macOS/iOS), steps, time window and email filtering. | `GET /admin/funnel` |
+| `/signup-offers` | Independent iOS and desktop signup lifetime switches, saved state and grant history in profiles. | `GET/PATCH /admin/signup-lifetime` |
 
 > The **Live now** figure and the live-sessions panel only populate once desktop
 > clients send heartbeats (`POST /api/sessions/heartbeat`, ~every 5 min during a
-> focus session). A quiet dashboard means nobody is currently focusing.
+> focus session). Empty data can also reflect stale/missing client reporting;
+> the console does not itself measure native blocking.
 
 ---
 
@@ -82,6 +96,7 @@ ADMIN_JWT_SECRET="<a long random string>" # separate from the user JWT secret
 | `npm run build` | Production build (`next build`). |
 | `npm start` | Serve the production build on port 3210. |
 | `npm run typecheck` | `tsc --noEmit`. |
+| `npm test` | Session/proxy regression tests (`scripts/test-admin-session.cjs`), with simulated service boundaries. |
 
 ## Deploy
 
