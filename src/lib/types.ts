@@ -75,6 +75,10 @@ export interface UserListItem {
   id: string;
   email: string;
   plan: string;
+  emailVerified?: boolean | null;
+  accessRevoked?: boolean | null;
+  iosLifetimeGrantedAt?: string | null;
+  desktopLifetimeGrantedAt?: string | null;
   status: string;
   createdAt: string;
   deviceCount: number;
@@ -168,7 +172,7 @@ export interface AdminUser {
   desktopLifetimeGrantedAt?: string | null;
   iosLifetimeGrantedAt?: string | null;
   /** Reserved at account creation; grants access only after email verification. */
-  signupLifetimeOffer?: "ios" | "desktop" | null;
+  signupLifetimeOffer?: "ios" | "desktop" | "all" | null;
 }
 
 export interface SignupLifetimeSettings {

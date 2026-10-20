@@ -7,6 +7,7 @@ import { apiGet } from "@/lib/client";
 import { fmtDuration, fmtDateShort, timeAgo, fmtNumber } from "@/lib/format";
 import { Card, PageHeader, Badge } from "@/components/ui";
 import CreateUserSheet from "@/components/CreateUserSheet";
+import { accountPlanLabel } from "@/lib/lifetime-display";
 
 const TAKE = 25;
 
@@ -144,7 +145,7 @@ export default function UsersPage() {
                       <span className="font-medium text-ink">{u.email}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-3 capitalize text-muted">{u.plan}</td>
+                  <td className="py-3 px-3 capitalize text-muted">{accountPlanLabel(u)}</td>
                   <td className="py-3 px-3">
                     {u.status === "suspended" ? <Badge tone="red">suspended</Badge> : <Badge tone="green">active</Badge>}
                   </td>

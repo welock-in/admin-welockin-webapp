@@ -2,6 +2,15 @@
 
 Sélection non exhaustive du journal atteignable depuis `origin/main` au 3 octobre 2026 (`47b955c`). Dates de commits, pas dates de publication. Le paquet privé reste `0.1.0` ; la présence d'une fonctionnalité dans Git ne prouve pas son déploiement ou les données de production.
 
+## 2026-10-20 — droits lifetime visibles
+
+- Les offres expliquent que ON/ON accorde iOS et desktop au même compte,
+  indépendamment de son appareil d’inscription.
+- Les profils affichent les deux réservations pour `all`.
+- La liste, l’en-tête et le panneau de paiement affichent les droits lifetime
+  réels par plateforme même si le cache global indique expired.
+- Build de production et contrôle TypeScript validés.
+
 ## 2026-10-03 — documentation
 
 - Ajout des guides architecture/développement, navigation et historique sourcé ; commentaires sur invariants de session, proxy et affichage live. Aucun comportement exécutable, version de paquet ni configuration modifiés.

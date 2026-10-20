@@ -8,7 +8,8 @@ export default function SignupLifetimeGrants({ user }: { user: AdminUser }) {
     { key: "ios", label: "iOS / iPadOS", grantedAt: user.iosLifetimeGrantedAt },
     { key: "desktop", label: "Windows + macOS", grantedAt: user.desktopLifetimeGrantedAt },
   ];
-  const visible = scopes.filter(({ key, grantedAt }) => grantedAt || user.signupLifetimeOffer === key);
+  const visible = scopes.filter(({ key, grantedAt }) =>
+    grantedAt || user.signupLifetimeOffer === "all" || user.signupLifetimeOffer === key);
   if (visible.length === 0) return null;
 
   return (
@@ -25,7 +26,7 @@ export default function SignupLifetimeGrants({ user }: { user: AdminUser }) {
             </div>
             <p className="text-xs text-muted mt-1">
               {grantedAt
-                ? `Granted ${fmtDate(grantedAt)} · no expiry.`
+                ? `Granted ${fmtDate(grantedAt)} · no expiry.${key === "ios" && !user.emailVerified ? " Email verification required to use iOS access." : ""}`
                 : `Reserved at signup ${fmtDate(user.createdAt)} · ${user.emailVerified ? "grant not recorded" : "awaiting email verification"}.`}
             </p>
           </div>

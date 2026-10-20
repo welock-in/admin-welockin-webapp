@@ -99,7 +99,8 @@ export default function SignupLifetimeSettings() {
 
       <div className="p-5">
         <p className="text-sm text-muted max-w-3xl">
-          Only new accounts created while an offer is ON reserve lifetime access.
+          New accounts reserve every offer that is ON when they sign up, whether created on iOS, Windows or Mac.
+          When both offers are ON, the same account gets lifetime access on iPhone, iPad, Windows and Mac.
           Access starts after email verification. New accounts created with a verified Apple email qualify immediately.
           Existing accounts are not upgraded.
         </p>
@@ -154,7 +155,7 @@ export default function SignupLifetimeSettings() {
 
         <div className="mt-5 border-t border-black/5 pt-4 space-y-2 text-sm text-muted">
           <p>Turning an offer OFF stops reservations for future signups. Previously reserved offers and lifetime grants remain valid.</p>
-          <p>Each offer applies only to its listed platforms. Purchases and subscriptions stay separate; these switches do not stop existing subscription charges.</p>
+          <p>Each switch controls where the account has lifetime access, regardless of the device used to sign up. Purchases and subscriptions stay separate; these switches do not stop existing subscription charges.</p>
         </div>
       </div>
     </Card>

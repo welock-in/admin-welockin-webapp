@@ -6,6 +6,7 @@ import { apiSend } from "@/lib/client";
 import { Badge } from "@/components/ui";
 import ResetTestUser from "@/components/ResetTestUser";
 import SignupLifetimeGrants from "@/components/SignupLifetimeGrants";
+import { lifetimeLabel } from "@/lib/lifetime-display";
 import { fmtDate } from "@/lib/format";
 import type { AdminUser, AdminPurchase, AdminSubscription } from "@/lib/types";
 
@@ -160,8 +161,8 @@ export default function PaymentPanel({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-bold text-ink">Payments &amp; entitlement</h2>
         <div className="flex items-center gap-1.5">
-          <Badge tone={user.isProCached ? "green" : "gray"}>
-            {user.entitlementStatus ?? "—"}
+          <Badge tone={user.accessRevoked ? "red" : lifetimeLabel(user) || user.isProCached ? "green" : "gray"}>
+            {user.accessRevoked ? "revoked" : lifetimeLabel(user) ?? user.entitlementStatus ?? "—"}
           </Badge>
           {compActive && <Badge tone="ink">comped</Badge>}
           {revoked && <Badge tone="red">revoked</Badge>}

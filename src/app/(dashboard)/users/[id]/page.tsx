@@ -8,6 +8,7 @@ import { BarChart } from "@/components/Charts";
 import UserModeration from "@/components/UserModeration";
 import ForceEndButton from "@/components/ForceEndButton";
 import PaymentPanel from "@/components/PaymentPanel";
+import { accountPlanLabel } from "@/lib/lifetime-display";
 
 export const dynamic = "force-dynamic";
 
@@ -49,13 +50,13 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       <PageHeader
         title={user.email}
         subtitle={`Joined ${fmtDateShort(user.createdAt)} · ID ${user.id}`}
-        right={<UserModeration userId={user.id} status={user.status ?? "active"} plan={user.plan} email={user.email} />}
+        right={<UserModeration userId={user.id} status={user.status ?? "active"} plan={accountPlanLabel(user)} email={user.email} />}
       />
 
       <div className="flex items-center gap-2 -mt-3 mb-5">
         <Badge tone={suspended ? "red" : "green"}>{suspended ? "suspended" : "active"}</Badge>
         <Badge tone="ink">
-          <span className="capitalize">{user.plan}</span>
+          <span className="capitalize">{accountPlanLabel(user)}</span>
         </Badge>
         {user.emailVerified ? <Badge tone="green">email verified</Badge> : <Badge tone="amber">unverified</Badge>}
         {liveSessions.length > 0 && <Badge tone="green">live now</Badge>}
